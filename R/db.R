@@ -392,14 +392,12 @@ write_data_safely <- function(dbconn, tblname, df, key) {
   invisible(TRUE)
 }
 
-#' setdiff current ids with those in the table of the database.
+#' Get a list of the ids present in the cache tables.
 #'
 #' @param dbconn SQLConnection. The database connection.
 #' @param tbl_name character. Database table name.
-#' @param ids vector. A vector of ids.
 #' @param key character. Identifier of database table.
-get_new_key <- function(dbconn, tbl_name, ids, key) {
-  if (length(ids) == 0) return(integer(0))
+get_present_keys <- function(dbconn, tbl_name, key) {
   shards <- get_shards_for_table(dbconn, tbl_name)
   ## If there are no existing shards - then nothing is cached yet
   if (NROW(shards) == 0) {
@@ -414,7 +412,19 @@ get_new_key <- function(dbconn, tbl_name, ids, key) {
     "SELECT ", id_column_name, " FROM ", shards[1]))
   ## If the table is empty, a 0-by-0 dataframe will be returned, so
   ## we must be careful.
-  present_ids <- if (NROW(present_ids)) present_ids[[1]] else integer(0)
+  if (NROW(present_ids)) present_ids[[1]] else integer(0)
+}
+
+
+#' setdiff current ids with those in the table of the database.
+#'
+#' @param dbconn SQLConnection. The database connection.
+#' @param tbl_name character. Database table name.
+#' @param ids vector. A vector of ids.
+#' @param key character. Identifier of database table.
+get_new_key <- function(dbconn, tbl_name, ids, key) {
+  if (length(ids) == 0) return(integer(0))
+  present_ids <- get_present_keys(dbconn, tbl_name, key)
   setdiff(ids, present_ids)
 }
 
